@@ -138,7 +138,7 @@ namespace MatEnv {
       } else
 	return 1.0; // 'infinite' scattering
     }
-
+  /*
   double
     DetMaterial::dEdx(double mom,dedxtype type,double mass) const {
       if(mom>0.0){
@@ -210,9 +210,60 @@ namespace MatEnv {
       } else
 	return 0.0;
     }
+  */
+  
+  //Replacement for dEdx function: Most probable energy loss, delta_p
+  double
+    DetMaterial::delta_p(double mom, double mass) const {
+      if(mom>0.0){
+        
+	double Eexc2 = _eexc*_eexc ;
 
+	// New energy loss implementation
 
+	double Tmax,gamma2,beta2,bg2,rcut,delta,x, xi, deltap ;
+	double beta  = particleBeta(mom,mass) ;
+	double gamma = particleGamma(mom,mass) ;
+	double tau = gamma-1. ;
+	double j = 0.200 ; 
+	double thickness = 2.502e-3 ; //in g per cm^2
 
+	// most probable energy loss function 
+
+	beta2 = beta*beta ;
+	gamma2 = gamma*gamma ;
+	bg2 = beta2*gamma2 ;
+	xi = _dgev*_density*_za * thickness / beta2 ; // in MeV
+
+	deltap = log(2.*e_mass_*bg2/_eexc) + log(xi/_eexc);
+	deltap -= beta2 ;
+	deltap += j ;
+
+	// density correction 
+	x = log(bg2)/twoln10 ;
+	if ( x < _x0 ) {
+	  if(_delta0 > 0) {
+	    delta = _delta0*pow(10.0,2*(x-_x0));
+	  }
+	  else {
+	    delta = 0.;
+	  }
+	} else {
+	  delta = twoln10*x - _bigc;
+	  if ( x < _x1 )
+	    delta += _afactor * pow((_x1 - x), _mpower);
+	} 
+
+	
+	deltap -= delta ;
+	deltap *= xi;
+	return dedx;
+      } else
+	return 0.0;
+    }
+  
+  
+  /*
   double 
     DetMaterial::energyLoss(double mom, double pathlen,double mass) const {
       // make sure we take positive lengths!
@@ -288,7 +339,9 @@ namespace MatEnv {
     DetMaterial::energyDeposit(double mom, double pathlen, double mass) const {
       double dedx = dEdx(mom,deposit,mass);
       return dedx*fabs(pathlen);
-    }  
+    }
+    
+  */
 
   /********************** end of New Routines **************************/ 
 
