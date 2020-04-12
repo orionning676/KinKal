@@ -257,7 +257,7 @@ namespace MatEnv {
 	
 	deltap -= delta ;
 	deltap *= xi;
-	return dedx;
+	return deltap;
       } else
 	return 0.0;
     }
