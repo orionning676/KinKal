@@ -212,21 +212,21 @@ namespace MatEnv {
     }
   */
   
-  //Replacement for dEdx function: Most probable energy loss, delta_p
+  //Replacement for dEdx function: Most probable energy loss per thickness x, delta_p/x or delpx
   double
-    DetMaterial::delta_p(double mom, double mass) const {
+    DetMaterial::delpx(double mom, double pathlen, double mass) const {
       if(mom>0.0){
-        
-	double Eexc2 = _eexc*_eexc ;
-
+	//taking positive lengths
+	pathlen = fabs(pathlen) ;
+	
 	// New energy loss implementation
 
-	double Tmax,gamma2,beta2,bg2,rcut,delta,x, xi, deltap ;
+	double Tmax,gamma2,beta2,bg2,rcut,delta,x, xi, deltapx ;
 	double beta  = particleBeta(mom,mass) ;
 	double gamma = particleGamma(mom,mass) ;
 	double tau = gamma-1. ;
 	double j = 0.200 ; 
-	double thickness = 2.502e-3 ; //in g per cm^2
+	double thickness = _density*pathlen ;   // in g/cm^2
 
 	// most probable energy loss function 
 
@@ -235,9 +235,9 @@ namespace MatEnv {
 	bg2 = beta2*gamma2 ;
 	xi = _dgev*_density*_za * thickness / beta2 ; // in MeV
 
-	deltap = log(2.*e_mass_*bg2/_eexc) + log(xi/_eexc);
-	deltap -= beta2 ;
-	deltap += j ;
+	deltapx = log(2.*e_mass_*bg2/_eexc) + log(xi/_eexc);
+	deltapx -= beta2 ;
+	deltapx += j ;
 
 	// density correction 
 	x = log(bg2)/twoln10 ;
@@ -255,14 +255,52 @@ namespace MatEnv {
 	} 
 
 	
-	deltap -= delta ;
-	deltap *= xi;
-	return deltap;
+	deltapx -= delta ;
+	deltapx *= xi ;
+	deltapx = deltapx/thickness ;
+	return deltapx;
       } else
 	return 0.0;
     }
   
-  
+  //Now calculating total energy loss over length of detector
+	
+  double 
+    DetMaterial::energyLoss(double mom, double pathlen,double mass) const {
+      // make sure we take positive lengths!
+      pathlen = fabs(pathlen);
+      double deltapx = delpx(mom,pathlen,mass);
+      // see how far I can step, within tolerance, given this energy loss
+      double maxstep = maxStepdEdx(mom,mass,deltapx);
+      // if this is larger than my path, I'm done
+      if(maxstep>pathlen){
+	return deltapx*pathlen;
+      } else {
+	// subdivide the material
+	unsigned nstep = std::min(int(pathlen/maxstep) + 1,maxnstep);
+	double step = pathlen/nstep;
+	double energy = particleEnergy(mom,mass);
+	double deltae = step*deltapx;
+	double newenergy(energy+deltae);
+	double eloss(deltae);
+	for(unsigned istep=0;istep<nstep-1;istep++){
+	  if(newenergy>mass){
+	    // compute the new deltapx given the new momentum
+	    double newmom = particleMomentum(newenergy,mass);
+	    //new pathlength to calculate delpx gets shorter each step
+	    deltae = step*delpx(newmom,pathlen-(step*(istep+1)),mass);
+	    // compute the loss in this step
+	    eloss += deltae;
+	    newenergy += deltae;
+	  } else {
+	    // lost all kinetic energy; stop
+	    eloss = mass-energy;
+	    break;
+	  }
+	}
+	return eloss;
+      }
+    }  
   /*
   double 
     DetMaterial::energyLoss(double mom, double pathlen,double mass) const {
