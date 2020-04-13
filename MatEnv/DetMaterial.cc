@@ -266,7 +266,7 @@ namespace MatEnv {
   //Now calculating total energy loss over length of detector
 	
   double 
-    DetMaterial::energyLoss(double mom, double pathlen,double mass) const {
+    DetMaterial::energyLossDelp(double mom, double pathlen,double mass) const {
       // make sure we take positive lengths!
       pathlen = fabs(pathlen);
       double deltapx = delpx(mom,pathlen,mass);
