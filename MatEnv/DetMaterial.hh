@@ -46,7 +46,8 @@ namespace MatEnv {
 
       double dEdx(double mom,dedxtype type,double mass) const;
 	  
-      double delta_p(double mom, double mass) const; //this is the new most probable energy loss function
+      double delpx(double mom, double pathlen, double mass) const; //this is most probable energy loss/x function
+      double energyLossDelp(double mom, double pathlen, double mass) const;  // this will be total energy loss using delpx
 	  
       double energyLoss(double mom,double pathlen,double mass) const;
       double energyLossRMS(double mom,double pathlen,double mass) const;
