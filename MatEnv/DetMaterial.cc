@@ -221,10 +221,9 @@ namespace MatEnv {
 	
 	// New energy loss implementation
 
-	double Tmax,gamma2,beta2,bg2,rcut,delta,x, xi, deltapx ;
+	double gamma2,beta2,bg2,delta,x, xi, deltapx ;
 	double beta  = particleBeta(mom,mass) ;
 	double gamma = particleGamma(mom,mass) ;
-	double tau = gamma-1. ;
 	double j = 0.200 ; 
 	double thickness = _density*pathlen ;   // in g/cm^2
 
@@ -256,7 +255,7 @@ namespace MatEnv {
 
 	
 	deltapx -= delta ;
-	deltapx *= xi ;
+	deltapx *= -xi ;
 	deltapx = deltapx/thickness ;
 	return deltapx;
       } else
